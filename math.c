@@ -12,6 +12,13 @@ Log(double x)
 {
 	return errcheck(log(x), "log");
 }
+
+double
+Log2(double x)
+{
+	return errcheck(log2(x), "lg");
+}
+
 double
 Log10(double x)
 {
@@ -78,12 +85,9 @@ integer(double x)
 double
 errcheck(double d, char* s)	/* check result of library call */
 {
-	if (errno == EDOM) {
-		errno = 0;
+	if (isnan(d))
 		execerror(s, "argument out of domain");
-	} else if (errno == ERANGE) {
-		errno = 0;
+	if (isinf(d))
 		execerror(s, "result out of range");
-	}
 	return d;
 }

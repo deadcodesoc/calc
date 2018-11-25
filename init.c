@@ -28,6 +28,7 @@ static struct {		/* Built-ins */
 	"cosh",	Cosh,	/* checks range */
 	"tanh",	tanh,
 	"log",	Log,	/* checks range */
+	"lg",   Log2,	/* checks range */
 	"log10", Log10,	/* checks range */
 	"exp",	Exp,	/* checks range */
 	"sqrt",	Sqrt,	/* checks range */
