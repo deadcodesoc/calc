@@ -5,6 +5,9 @@
 #include <setjmp.h>
 #include "calc.h"
 
+#define code2(c1,c2)	code(c1); code(c2)
+#define code3(c1,c2,c3)	code(c1); code(c2); code(c3)
+
 int yylex(void);
 void yyerror(char *);
 
@@ -12,50 +15,42 @@ unsigned int lineno = 1;
 %}
 
 %union {
-	double val;
-	Symbol *sym;
+	Symbol	*sym;
+	Inst	*inst;
 }
-%token	<val> NUMBER
-%token	<sym> VAR BLTIN UNDEF
-%type	<val> expr asgn
+%type	<inst> expr asgn
+%token	<sym> NUMBER VAR BLTIN UNDEF
 %right	'='
 %left	'+' '-'
 %left	'*' '/' '%'
-%left	UNARYMINUS UNARYPLUS
+%left	UNARYMINUS
 %right	'^'
 
 %%
 
 list:	/* empty */
 	| list '\n'		{ lineno++; }
-	| list asgn '\n'	{ lineno++; }
-	| list expr '\n'	{ lineno++; printf("\t%.17g\n", $2); }
+	| list asgn '\n'	{ lineno++; code2((Inst)pop, STOP); return 1; }
+	| list expr '\n'	{ lineno++; code2(print, STOP); return 1; }
 	| list error '\n'	{ yyerrok; }
 	;
 
-asgn:	  VAR '=' expr				{ $$=$1->u.val = $3; $1->type = VAR;  }
+asgn:	  VAR '=' expr				{ code3(varpush, (Inst)$1, assign); }
 
-expr:	NUMBER					{ $$ = $1; }
-	| VAR					{ if ($1->type == UNDEF)
-							execerror("undefined variable", $1->name);
-						  $$ = $1->u.val; }
+expr:	NUMBER					{ code2(constpush, (Inst)$1);  }
+	| VAR					{ code3(varpush, (Inst)$1, eval); }
 	| asgn
-	| BLTIN '(' expr ')'			{ $$ = (*($1->u.ptr))($3); }
-	| expr '+' expr				{ $$ = $1 + $3; }
-	| expr '-' expr				{ $$ = $1 - $3; }
-	| expr '*' expr				{ $$ = $1 * $3; }
-	| expr '/' expr				{ if ($3 == 0.0)
-							execerror("division by zero", "");
-						  $$ = $1 / $3; }
-	| expr '%' expr				{ if ($3 == 0.0)
-							execerror("division by zero", "");
-						  $$ = fmod($1, $3); }
-	| expr '^' expr				{ $$ = Pow($1, $3); }
-	| '(' expr ')'				{ $$ = $2; }
-	| '[' expr ']'				{ $$ = $2; }
-	| '{' expr '}'				{ $$ = $2; }
-	| '-' expr %prec UNARYMINUS		{ $$ = -$2; }
-	| '+' expr %prec UNARYPLUS		{ $$ = +$2; }
+	| BLTIN '(' expr ')'			{ code2(bltin, (Inst)$1->u.ptr);  }
+	| expr '+' expr				{ code(add); }
+	| expr '-' expr				{ code(sub); }
+	| expr '*' expr				{ code(mul); }
+	| expr '/' expr				{ code(div); }
+	| expr '%' expr				{ code(mod); }
+	| expr '^' expr				{ code(power); }
+	| '(' expr ')'				{ }
+	| '[' expr ']'				{ }
+	| '{' expr '}'				{ }
+	| '-' expr %prec UNARYMINUS		{ code(negate); }
 	;
 
 %%
@@ -72,8 +67,10 @@ yylex(void)
 	if (c == EOF)					/* the $end */
 		return 0;
 	if (c == '.' || isdigit(c)) {			/* a number */
+		double d;
 		ungetc(c, stdin);
-		scanf("%lf", &yylval.val);
+		scanf("%lf", &d);
+		yylval.sym = install("", NUMBER, d);
 		return NUMBER;
 	}
 	if (isalpha(c)) {
@@ -127,5 +124,7 @@ main(int argc, char *argv[])
 	progname = argv[0];
 	init();
 	setjmp(begin);
-	return yyparse();
+	for (initcode(); yyparse(); initcode())
+		execute(prog);
+	return 0;
 }
