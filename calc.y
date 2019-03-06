@@ -21,6 +21,7 @@ unsigned int lineno = 1;
 %type	<inst> expr asgn
 %token	<sym> NUMBER VAR BLTIN UNDEF
 %right	'='
+%left	GT GE LT LE EQ NE
 %left	'+' '-'
 %left	'*' '/' '%'
 %left	UNARYMINUS
@@ -51,6 +52,12 @@ expr:	NUMBER					{ code2(constpush, (Inst)$1);  }
 	| '[' expr ']'				{ }
 	| '{' expr '}'				{ }
 	| '-' expr %prec UNARYMINUS		{ code(negate); }
+	| expr GT expr				{ code(gt); }
+	| expr GE expr				{ code(ge); }
+	| expr LT expr				{ code(lt); }
+	| expr LE expr				{ code(le); }
+	| expr EQ expr				{ code(eq); }
+	| expr NE expr				{ code(ne); }
 	;
 
 %%
@@ -93,7 +100,22 @@ yylex(void)
 		yylval.sym = s;
 		return s->type == UNDEF ? VAR : s->type;
 	}
-	return c;
+	switch (c) {
+	case '>':	return follow('=', GE, GT);
+	case '<':	return follow('=', LE, LT);
+	case '=':	return follow('=', EQ, '=');
+	default:	return c;
+	}
+}
+
+int
+follow(int expect, int ifyes, int ifno)
+{
+	int c = getchar();
+	if (c == expect)
+		return ifyes;
+	ungetc(c, stdin);
+	return ifno;
 }
 
 void

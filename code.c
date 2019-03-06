@@ -137,6 +137,66 @@ power(void)
 }
 
 void
+gt(void)
+{
+	Datum d1, d2;
+	d2 = pop();
+	d1 = pop();
+	d1.val = (double)(d1.val > d2.val);
+	push(d1);
+}
+
+void
+ge(void)
+{
+	Datum d1, d2;
+	d2 = pop();
+	d1 = pop();
+	d1.val = (double)(d1.val >= d2.val);
+	push(d1);
+}
+
+void
+lt(void)
+{
+	Datum d1, d2;
+	d2 = pop();
+	d1 = pop();
+	d1.val = (double)(d1.val < d2.val);
+	push(d1);
+}
+
+void
+le(void)
+{
+	Datum d1, d2;
+	d2 = pop();
+	d1 = pop();
+	d1.val = (double)(d1.val <= d2.val);
+	push(d1);
+}
+
+void
+eq(void)
+{
+	Datum d1, d2;
+	d2 = pop();
+	d1 = pop();
+	d1.val = (double)(d1.val == d2.val);
+	push(d1);
+}
+
+void
+ne(void)
+{
+	Datum d1, d2;
+	d2 = pop();
+	d1 = pop();
+	d1.val = (double)(d1.val != d2.val);
+	push(d1);
+}
+
+void
 eval(void)
 {
 	Datum d;
