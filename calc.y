@@ -21,10 +21,12 @@ unsigned int lineno = 1;
 %type	<inst> expr asgn
 %token	<sym> NUMBER VAR BLTIN UNDEF
 %right	'='
+%left	OR
+%left	AND
 %left	GT GE LT LE EQ NE
 %left	'+' '-'
 %left	'*' '/' '%'
-%left	UNARYMINUS
+%left	UNARYMINUS NOT
 %right	'^'
 
 %%
@@ -58,6 +60,9 @@ expr:	NUMBER					{ code2(constpush, (Inst)$1);  }
 	| expr LE expr				{ code(le); }
 	| expr EQ expr				{ code(eq); }
 	| expr NE expr				{ code(ne); }
+	| expr AND expr				{ code(and); }
+	| expr OR expr				{ code(or); }
+	| NOT expr				{ $$ = $2; code(not); }
 	;
 
 %%
@@ -104,6 +109,9 @@ yylex(void)
 	case '>':	return follow('=', GE, GT);
 	case '<':	return follow('=', LE, LT);
 	case '=':	return follow('=', EQ, '=');
+	case '!':	return follow('=', NE, NOT);
+	case '|':	return follow('|', OR, '|');
+	case '&':	return follow('&', AND, '&');
 	default:	return c;
 	}
 }

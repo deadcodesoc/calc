@@ -197,6 +197,35 @@ ne(void)
 }
 
 void
+and(void)
+{
+	Datum d1, d2;
+	d2 = pop();
+	d1 = pop();
+	d1.val = (double)(d1.val != 0.0 && d2.val != 0.0);
+	push(d1);
+}
+
+void
+or(void)
+{
+	Datum d1, d2;
+	d2 = pop();
+	d1 = pop();
+	d1.val = (double)(d1.val != 0.0 || d2.val != 0.0);
+	push(d1);
+}
+
+void
+not(void)
+{
+	Datum d;
+	d = pop();
+	d.val = (double)(d.val == 0.0);
+	push(d);
+}
+
+void
 eval(void)
 {
 	Datum d;
