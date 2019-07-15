@@ -20,13 +20,13 @@ unsigned int lineno = 1;
 }
 %type	<inst> expr asgn
 %token	<sym> NUMBER VAR BLTIN UNDEF
-%right	'='
+%right	'=' ADDEQ SUBEQ MULEQ DIVEQ MODEQ
 %left	OR
 %left	AND
 %left	GT GE LT LE EQ NE
 %left	'+' '-'
 %left	'*' '/' '%'
-%left	UNARYMINUS NOT
+%left	UNARYMINUS NOT INC DEC
 %right	'^'
 
 %%
@@ -39,6 +39,12 @@ list:	/* empty */
 	;
 
 asgn:	  VAR '=' expr				{ code3(varpush, (Inst)$1, assign); }
+	| VAR ADDEQ expr			{ code3(varpush, (Inst)$1, addeq); }
+	| VAR SUBEQ expr			{ code3(varpush, (Inst)$1, subeq); }
+	| VAR MULEQ expr			{ code3(varpush, (Inst)$1, muleq); }
+	| VAR DIVEQ expr			{ code3(varpush, (Inst)$1, diveq); }
+	| VAR MODEQ expr			{ code3(varpush, (Inst)$1, modeq); }
+	;
 
 expr:	NUMBER					{ code2(constpush, (Inst)$1);  }
 	| VAR					{ code3(varpush, (Inst)$1, eval); }
@@ -63,6 +69,10 @@ expr:	NUMBER					{ code2(constpush, (Inst)$1);  }
 	| expr AND expr				{ code(and); }
 	| expr OR expr				{ code(or); }
 	| NOT expr				{ $$ = $2; code(not); }
+	| INC VAR				{ $$ = code2(preinc, (Inst)$2); }
+	| DEC VAR				{ $$ = code2(predec, (Inst)$2); }
+	| VAR INC				{ $$ = code2(postinc, (Inst)$1); }
+	| VAR DEC				{ $$ = code2(postdec, (Inst)$1); }
 	;
 
 %%
@@ -106,6 +116,11 @@ yylex(void)
 		return s->type == UNDEF ? VAR : s->type;
 	}
 	switch (c) {
+	case '+':	return follow('+', INC, follow('=', ADDEQ, '+'));
+	case '-':	return follow('-', DEC, follow('=', SUBEQ, '-'));
+	case '*':	return follow('=', MULEQ, '*');
+	case '/':	return follow('=', DIVEQ, '/');
+	case '%':	return follow('=', MODEQ, '%');
 	case '>':	return follow('=', GE, GT);
 	case '<':	return follow('=', LE, LT);
 	case '=':	return follow('=', EQ, '=');

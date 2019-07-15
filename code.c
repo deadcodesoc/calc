@@ -235,6 +235,122 @@ verify(Symbol *s)
 }
 
 void
+preinc(void)
+{
+	Datum d;
+	d.sym = (Symbol *)(*pc++);
+	verify(d.sym);
+	d.val = d.sym->u.val += 1.0;
+	push(d);
+}
+
+void
+predec(void)
+{
+	Datum d;
+	d.sym = (Symbol *)(*pc++);
+	verify(d.sym);
+	d.val = d.sym->u.val -= 1.0;
+	push(d);
+}
+
+void
+postinc(void)
+{
+	Datum d;
+	double v;
+	d.sym = (Symbol *)(*pc++);
+	verify(d.sym);
+	v = d.sym->u.val;
+	d.sym->u.val += 1.0;
+	d.val = v;
+	push(d);
+}
+
+void
+postdec(void)
+{
+	Datum d;
+	double v;
+	d.sym = (Symbol *)(*pc++);
+	verify(d.sym);
+	v = d.sym->u.val;
+	d.sym->u.val -= 1.0;
+	d.val = v;
+	push(d);
+}
+
+void
+addeq(void)
+{
+	Datum d1, d2;
+	d1 = pop();
+	d2 = pop();
+	if (d1.sym->type != VAR && d1.sym->type != UNDEF)
+		execerror("assignment to non-variable", d1.sym->name);
+	d2.val = d1.sym->u.val += d2.val;
+	d1.sym->type = VAR;
+	push(d2);
+}
+
+void
+subeq(void)
+{
+	Datum d1, d2;
+	d1 = pop();
+	d2 = pop();
+	if (d1.sym->type != VAR && d1.sym->type != UNDEF)
+		execerror("assignment to non-variable", d1.sym->name);
+	d2.val = d1.sym->u.val -= d2.val;
+	d1.sym->type = VAR;
+	push(d2);
+}
+
+void
+muleq(void)
+{
+	Datum d1, d2;
+	d1 = pop();
+	d2 = pop();
+	if (d1.sym->type != VAR && d1.sym->type != UNDEF)
+		execerror("assignment to non-variable", d1.sym->name);
+	d2.val = d1.sym->u.val *= d2.val;
+	d1.sym->type = VAR;
+	push(d2);
+}
+
+void
+diveq(void)
+{
+	Datum d1, d2;
+	d1 = pop();
+	d2 = pop();
+	if (d1.sym->type != VAR && d1.sym->type != UNDEF)
+		execerror("assignment to non-variable", d1.sym->name);
+	d2.val = d1.sym->u.val /= d2.val;
+	d1.sym->type = VAR;
+	push(d2);
+}
+
+void
+modeq(void)
+{
+	Datum d1, d2;
+	long x;
+	d1 = pop();
+	d2 = pop();
+	if (d1.sym->type != VAR && d1.sym->type != UNDEF)
+		execerror("assignment to non-variable", d1.sym->name);
+	// d2.val = d1.sym->u.val %= d2.val;
+	// error: invalid operands to binary expression ('double' and 'double')
+	x = d1.sym->u.val;
+	x %= (long) d2.val;
+	d2.val = d1.sym->u.val = x;
+	d1.sym->type = VAR;
+	push(d2);
+}
+
+void
 eval(void)
 {
 	Datum d;
