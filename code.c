@@ -226,12 +226,20 @@ not(void)
 }
 
 void
+verify(Symbol *s)
+{
+	if (s->type == UNDEF)
+		execerror("undefined variable", s->name);
+	if (s->type != VAR && s->type != UNDEF)
+		execerror("attempt to evaluate non-variable", s->name);
+}
+
+void
 eval(void)
 {
 	Datum d;
 	d = pop();
-	if (d.sym->type == UNDEF)
-		execerror("undefined variable", d.sym->name);
+	verify(d.sym);
 	d.val = d.sym->u.val;
 	push(d);
 }
