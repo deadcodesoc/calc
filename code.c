@@ -382,6 +382,14 @@ print(void)
 }
 
 void
+prexpr(void)
+{
+	Datum d;
+	d = pop();
+	printf("%.17g\n", d.val);
+}
+
+void
 bltin(void)
 {
 	Datum d;

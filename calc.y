@@ -18,8 +18,8 @@ unsigned int lineno = 1;
 	Symbol	*sym;
 	Inst	*inst;
 }
-%type	<inst> expr asgn
-%token	<sym> NUMBER VAR BLTIN UNDEF
+%type	<inst> expr stmt asgn
+%token	<sym> NUMBER PRINT VAR BLTIN UNDEF
 %right	'=' ADDEQ SUBEQ MULEQ DIVEQ MODEQ
 %left	OR
 %left	AND
@@ -34,6 +34,7 @@ unsigned int lineno = 1;
 list:	/* empty */
 	| list '\n'		{ lineno++; }
 	| list asgn '\n'	{ lineno++; code2((Inst)pop, STOP); return 1; }
+	| list stmt '\n'	{ lineno++; code(STOP); return 1; }
 	| list expr '\n'	{ lineno++; code2(print, STOP); return 1; }
 	| list error '\n'	{ yyerrok; }
 	;
@@ -44,6 +45,10 @@ asgn:	  VAR '=' expr				{ code3(varpush, (Inst)$1, assign); }
 	| VAR MULEQ expr			{ code3(varpush, (Inst)$1, muleq); }
 	| VAR DIVEQ expr			{ code3(varpush, (Inst)$1, diveq); }
 	| VAR MODEQ expr			{ code3(varpush, (Inst)$1, modeq); }
+	;
+
+stmt:     expr					{ code((Inst)pop); }
+	| PRINT expr				{ code(prexpr); $$ = $2; }
 	;
 
 expr:	NUMBER					{ code2(constpush, (Inst)$1);  }
