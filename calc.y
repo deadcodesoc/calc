@@ -18,7 +18,7 @@ unsigned int lineno = 1;
 	Symbol	*sym;
 	Inst	*inst;
 }
-%type	<inst> expr stmt asgn
+%type	<inst> expr stmt stmtlist asgn
 %token	<sym> NUMBER PRINT VAR BLTIN UNDEF
 %right	'=' ADDEQ SUBEQ MULEQ DIVEQ MODEQ
 %left	OR
@@ -49,6 +49,12 @@ asgn:	  VAR '=' expr				{ code3(varpush, (Inst)$1, assign); }
 
 stmt:     expr					{ code((Inst)pop); }
 	| PRINT expr				{ code(prexpr); $$ = $2; }
+	| '{' stmtlist '}'			{ $$ = $2; }
+	;
+
+stmtlist:					{ $$ = progp; }
+	| stmtlist '\n'
+	| stmtlist stmt
 	;
 
 expr:	NUMBER					{ code2(constpush, (Inst)$1);  }

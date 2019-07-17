@@ -7,6 +7,7 @@ typedef void (*Inst)(void);
 #define STOP    (Inst) 0
 
 extern Inst prog[];
+extern Inst *progp;
 
 extern void     initcode(void);
 extern void     push(Datum);
