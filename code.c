@@ -405,6 +405,20 @@ whilecode(void)
 }
 
 void
+ifcode()
+{
+	Datum d;
+	Inst *savepc = pc;
+	execute(savepc+3);
+	d = pop();
+	if (d.val)
+		execute(*((Inst **)(savepc)));
+	else if (*((Inst **)(savepc+1)))
+		execute(*((Inst **)(savepc+1)));
+	pc = *((Inst **)(savepc+2));
+}
+
+void
 bltin(void)
 {
 	Datum d;

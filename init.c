@@ -43,6 +43,8 @@ static struct {		/* Keywords */
 } keywords[] = {
 	"print",	PRINT,
 	"while",	WHILE,
+	"if",		IF,
+	"else",		ELSE,
 	0,		0,
 };
 

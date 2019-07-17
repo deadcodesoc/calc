@@ -18,8 +18,8 @@ unsigned int lineno = 1;
 	Symbol	*sym;
 	Inst	*inst;
 }
-%type	<inst> expr stmt stmtlist asgn cond while end
-%token	<sym> NUMBER PRINT VAR BLTIN UNDEF WHILE
+%type	<inst> expr stmt stmtlist asgn cond while if end
+%token	<sym> NUMBER PRINT VAR BLTIN UNDEF WHILE IF ELSE
 %right	'=' ADDEQ SUBEQ MULEQ DIVEQ MODEQ
 %left	OR
 %left	AND
@@ -52,6 +52,13 @@ stmt:     expr					{ code((Inst)pop); }
 	| while cond stmt end {
 		($1)[1] = (Inst)$3;
 		($1)[2] = (Inst)$4; }
+	| if cond stmt end {
+		($1)[1] = (Inst)$3;
+		($1)[3] = (Inst)$4; }
+	| if cond stmt end ELSE stmt end {
+		($1)[1] = (Inst)$3;
+		($1)[2] = (Inst)$6;
+		($1)[3] = (Inst)$7; }
 	| '{' stmtlist '}'			{ $$ = $2; }
 	;
 
@@ -59,6 +66,9 @@ cond:    '(' expr ')'				{ code(STOP);  $$ = $2; }
 	;
 
 while:   WHILE	{ $$ = code3(whilecode, STOP, STOP); }
+	;
+
+if:	IF { $$ = code(ifcode); code3(STOP, STOP, STOP); }
 	;
 
 end:						{ code(STOP); $$ = progp; }
