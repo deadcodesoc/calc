@@ -43,6 +43,7 @@ extern void     eval(void);
 extern void     assign(void);
 extern void     print(void);
 extern void     prexpr(void);
+extern void     whilecode(void);
 extern void     bltin(void);
 extern Inst     *code(Inst);
 extern void     execute(Inst*);

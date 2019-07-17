@@ -390,6 +390,21 @@ prexpr(void)
 }
 
 void
+whilecode(void)
+{
+	Datum d;
+	Inst *savepc = pc;
+	execute(savepc+2);
+	d = pop();
+	while (d.val) {
+		execute(*((Inst **)savepc));
+		execute(savepc+2);
+		d = pop();
+	}
+	pc = *((Inst **)(savepc+1));
+}
+
+void
 bltin(void)
 {
 	Datum d;

@@ -42,6 +42,7 @@ static struct {		/* Keywords */
 	int	kval;
 } keywords[] = {
 	"print",	PRINT,
+	"while",	WHILE,
 	0,		0,
 };
 
