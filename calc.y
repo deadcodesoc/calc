@@ -39,12 +39,12 @@ list:	/* empty */
 	| list error '\n'	{ yyerrok; }
 	;
 
-asgn:	  VAR '=' expr				{ code3(varpush, (Inst)$1, assign); }
-	| VAR ADDEQ expr			{ code3(varpush, (Inst)$1, addeq); }
-	| VAR SUBEQ expr			{ code3(varpush, (Inst)$1, subeq); }
-	| VAR MULEQ expr			{ code3(varpush, (Inst)$1, muleq); }
-	| VAR DIVEQ expr			{ code3(varpush, (Inst)$1, diveq); }
-	| VAR MODEQ expr			{ code3(varpush, (Inst)$1, modeq); }
+asgn:	  VAR '=' expr				{ $$ = $3; code3(varpush, (Inst)$1, assign); }
+	| VAR ADDEQ expr			{ $$ = $3; code3(varpush, (Inst)$1, addeq); }
+	| VAR SUBEQ expr			{ $$ = $3; code3(varpush, (Inst)$1, subeq); }
+	| VAR MULEQ expr			{ $$ = $3; code3(varpush, (Inst)$1, muleq); }
+	| VAR DIVEQ expr			{ $$ = $3; code3(varpush, (Inst)$1, diveq); }
+	| VAR MODEQ expr			{ $$ = $3; code3(varpush, (Inst)$1, modeq); }
 	;
 
 stmt:     expr					{ code((Inst)pop); }
@@ -87,20 +87,20 @@ stmtlist:					{ $$ = progp; }
 	| stmtlist stmt
 	;
 
-expr:	NUMBER					{ code2(constpush, (Inst)$1);  }
-	| VAR					{ code3(varpush, (Inst)$1, eval); }
+expr:	NUMBER					{ $$ = code2(constpush, (Inst)$1); }
+	| VAR					{ $$ = code3(varpush, (Inst)$1, eval); }
 	| asgn
-	| BLTIN '(' expr ')'			{ code2(bltin, (Inst)$1->u.ptr);  }
+	| BLTIN '(' expr ')'			{ $$ = $3; code2(bltin, (Inst)$1->u.ptr); }
 	| expr '+' expr				{ code(add); }
 	| expr '-' expr				{ code(sub); }
 	| expr '*' expr				{ code(mul); }
 	| expr '/' expr				{ code(div); }
 	| expr '%' expr				{ code(mod); }
 	| expr '^' expr				{ code(power); }
-	| '(' expr ')'				{ }
-	| '[' expr ']'				{ }
-	| '{' expr '}'				{ }
-	| '-' expr %prec UNARYMINUS		{ code(negate); }
+	| '(' expr ')'				{ $$ = $2; }
+	| '[' expr ']'				{ $$ = $2; }
+	| '{' expr '}'				{ $$ = $2; }
+	| '-' expr %prec UNARYMINUS		{ $$ = $2; code(negate); }
 	| expr GT expr				{ code(gt); }
 	| expr GE expr				{ code(ge); }
 	| expr LT expr				{ code(lt); }
