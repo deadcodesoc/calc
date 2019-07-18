@@ -45,6 +45,7 @@ static struct {		/* Keywords */
 	"while",	WHILE,
 	"if",		IF,
 	"else",		ELSE,
+	"for",		FOR,
 	0,		0,
 };
 

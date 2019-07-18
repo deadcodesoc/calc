@@ -18,8 +18,8 @@ unsigned int lineno = 1;
 	Symbol	*sym;
 	Inst	*inst;
 }
-%type	<inst> expr stmt stmtlist asgn cond while if end
-%token	<sym> NUMBER PRINT VAR BLTIN UNDEF WHILE IF ELSE
+%type	<inst> expr stmt stmtlist asgn cond while if end for
+%token	<sym> NUMBER PRINT VAR BLTIN UNDEF WHILE IF ELSE FOR
 %right	'=' ADDEQ SUBEQ MULEQ DIVEQ MODEQ
 %left	OR
 %left	AND
@@ -49,23 +49,31 @@ asgn:	  VAR '=' expr				{ code3(varpush, (Inst)$1, assign); }
 
 stmt:     expr					{ code((Inst)pop); }
 	| PRINT expr				{ code(prexpr); $$ = $2; }
-	| while cond stmt end {
-		($1)[1] = (Inst)$3;
-		($1)[2] = (Inst)$4; }
-	| if cond stmt end {
-		($1)[1] = (Inst)$3;
-		($1)[3] = (Inst)$4; }
-	| if cond stmt end ELSE stmt end {
-		($1)[1] = (Inst)$3;
-		($1)[2] = (Inst)$6;
-		($1)[3] = (Inst)$7; }
+	| while '(' cond ')' stmt end {
+		($1)[1] = (Inst)$5;
+		($1)[2] = (Inst)$6; }
+	| for '(' cond ';' cond ';' cond ')' stmt end {
+		($1)[1] = (Inst)$5;
+		($1)[2] = (Inst)$7;
+		($1)[3] = (Inst)$9;
+		($1)[4] = (Inst)$10; }
+	| if '(' cond ')' stmt end {
+		($1)[1] = (Inst)$5;
+		($1)[3] = (Inst)$6; }
+	| if '(' cond ')' stmt end ELSE stmt end {
+		($1)[1] = (Inst)$5;
+		($1)[2] = (Inst)$8;
+		($1)[3] = (Inst)$9; }
 	| '{' stmtlist '}'			{ $$ = $2; }
 	;
 
-cond:    '(' expr ')'				{ code(STOP);  $$ = $2; }
+cond:    expr					{ code(STOP); }
 	;
 
 while:   WHILE	{ $$ = code3(whilecode, STOP, STOP); }
+	;
+
+for:	 FOR { $$ = code(forcode); code3(STOP, STOP, STOP); code(STOP); }
 	;
 
 if:	IF { $$ = code(ifcode); code3(STOP, STOP, STOP); }
