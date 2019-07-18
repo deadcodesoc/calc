@@ -207,6 +207,10 @@ warning(char *s, char *t)
 int
 main(int argc, char *argv[])
 {
+#if YYDEBUG > 0
+	extern int yydebug;
+	yydebug=3;
+#endif
 	progname = argv[0];
 	init();
 	setjmp(begin);
