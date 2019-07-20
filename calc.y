@@ -32,10 +32,10 @@ unsigned int lineno = 1;
 %%
 
 list:	/* empty */
-	| list '\n'		{ lineno++; }
-	| list asgn '\n'	{ lineno++; code2((Inst)pop, STOP); return 1; }
-	| list stmt '\n'	{ lineno++; code(STOP); return 1; }
-	| list expr '\n'	{ lineno++; code2(print, STOP); return 1; }
+	| list '\n'
+	| list asgn '\n'	{ code2((Inst)pop, STOP); return 1; }
+	| list stmt '\n'	{ code(STOP); return 1; }
+	| list expr '\n'	{ code2(print, STOP); return 1; }
 	| list error '\n'	{ yyerrok; }
 	;
 
@@ -129,6 +129,13 @@ yylex(void)
 		;
 	if (c == EOF)					/* the $end */
 		return 0;
+	if (c == '#') {					/* comment */
+		while ((c = getchar()) != '\n' && c >= 0)
+			;
+		if (c == '\n')
+			lineno++;
+		return c;
+	}
 	if (c == '.' || isdigit(c)) {			/* a number */
 		double d;
 		ungetc(c, stdin);
@@ -168,6 +175,7 @@ yylex(void)
 	case '!':	return follow('=', NE, NOT);
 	case '|':	return follow('|', OR, '|');
 	case '&':	return follow('&', AND, '&');
+	case '\n':	lineno++; return '\n';
 	default:	return c;
 	}
 }
