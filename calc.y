@@ -32,11 +32,11 @@ unsigned int lineno = 1;
 %%
 
 list:	/* empty */
-	| list '\n'
-	| list asgn '\n'	{ code2((Inst)pop, STOP); return 1; }
-	| list stmt '\n'	{ code(STOP); return 1; }
-	| list expr '\n'	{ code2(print, STOP); return 1; }
-	| list error '\n'	{ yyerrok; }
+	| list sep
+	| list asgn sep		{ code2((Inst)pop, STOP); return 1; }
+	| list stmt sep		{ code(STOP); return 1; }
+	| list expr sep		{ code2(print, STOP); return 1; }
+	| list error sep	{ yyerrok; }
 	;
 
 asgn:	  VAR '=' expr				{ $$ = $3; code3(varpush, (Inst)$1, assign); }
@@ -83,8 +83,11 @@ end:						{ code(STOP); $$ = progp; }
 	;
 
 stmtlist:					{ $$ = progp; }
-	| stmtlist '\n'
+	| stmtlist sep
 	| stmtlist stmt
+	;
+
+sep:      '\n' | ';'
 	;
 
 expr:	NUMBER					{ $$ = code2(constpush, (Inst)$1); }
