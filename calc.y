@@ -12,6 +12,7 @@ int yylex(void);
 void yyerror(char *);
 
 unsigned int lineno = 1;
+unsigned int inloop = 0;
 %}
 
 %union {
@@ -49,24 +50,24 @@ asgn:	  VAR '=' expr				{ $$ = $3; code3(varpush, (Inst)$1, assign); }
 
 stmt:     expr					{ code((Inst)pop); }
 	| PRINT expr				{ code(prexpr); $$ = $2; }
-	| while '(' cond ')' stmt end {
-		($1)[1] = (Inst)$5;
-		($1)[2] = (Inst)$6; }
-	| do stmt WHILE '(' cond ')' end {
-		($1)[1] = (Inst)$2;
-		($1)[2] = (Inst)$7; }
-	| for '(' cond ';' cond ';' cond ')' stmt end {
-		($1)[1] = (Inst)$5;
-		($1)[2] = (Inst)$7;
-		($1)[3] = (Inst)$9;
-		($1)[4] = (Inst)$10; }
+	| while '(' cond ')' {inloop++;} stmt {--inloop;} end {
+		($1)[1] = (Inst)$6;	/* body of loop */
+		($1)[2] = (Inst)$8; }	/* end, if cond fails */
+	| do {inloop++;} stmt {--inloop;} WHILE '(' cond ')' end {
+		($1)[1] = (Inst)$3;	/* body of loop */
+		($1)[2] = (Inst)$9; }	/* end, if cond fails */
+	| for '(' cond ';' cond ';' cond ')' {inloop++;} stmt {--inloop;} end {
+		($1)[1] = (Inst)$5;	/* condition */
+		($1)[2] = (Inst)$7;	/* post loop */
+		($1)[3] = (Inst)$10;	/* body of loop */
+		($1)[4] = (Inst)$12; }	/* end, if cond fails */
 	| if '(' cond ')' stmt end {
-		($1)[1] = (Inst)$5;
-		($1)[3] = (Inst)$6; }
+		($1)[1] = (Inst)$5;	/* then part */
+		($1)[3] = (Inst)$6; }	/* end, if cond fails */
 	| if '(' cond ')' stmt end ELSE stmt end {
-		($1)[1] = (Inst)$5;
-		($1)[2] = (Inst)$8;
-		($1)[3] = (Inst)$9; }
+		($1)[1] = (Inst)$5;	/* then part */
+		($1)[2] = (Inst)$8;	/* else part */
+		($1)[3] = (Inst)$9; }	/* end, if cond fails */
 	| '{' stmtlist '}'			{ $$ = $2; }
 	;
 
