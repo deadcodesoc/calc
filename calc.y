@@ -13,14 +13,15 @@ void yyerror(char *);
 
 unsigned int lineno = 1;
 unsigned int inloop = 0;
+unsigned int inbreak = 0;
 %}
 
 %union {
 	Symbol	*sym;
 	Inst	*inst;
 }
-%type	<inst> expr stmt stmtlist asgn cond do while if end for
-%token	<sym> NUMBER PRINT VAR BLTIN UNDEF DO WHILE IF ELSE FOR
+%type	<inst> expr stmt stmtlist asgn cond do while if end for break
+%token	<sym> NUMBER PRINT VAR BLTIN UNDEF DO WHILE IF ELSE FOR BREAK
 %right	'=' ADDEQ SUBEQ MULEQ DIVEQ MODEQ
 %left	OR
 %left	AND
@@ -50,6 +51,7 @@ asgn:	  VAR '=' expr				{ $$ = $3; code3(varpush, (Inst)$1, assign); }
 
 stmt:     expr					{ code((Inst)pop); }
 	| PRINT expr				{ code(prexpr); $$ = $2; }
+	| break	{ if (!inloop) execerror("break illegal outside of loops", 0); }
 	| while '(' cond ')' {inloop++;} stmt {--inloop;} end {
 		($1)[1] = (Inst)$6;	/* body of loop */
 		($1)[2] = (Inst)$8; }	/* end, if cond fails */
@@ -84,6 +86,9 @@ for:	 FOR { $$ = code(forcode); code3(STOP, STOP, STOP); code(STOP); }
 	;
 
 if:	IF { $$ = code(ifcode); code3(STOP, STOP, STOP); }
+	;
+
+break:	BREAK { $$ = code(breakcode); }
 	;
 
 end:						{ code(STOP); $$ = progp; }

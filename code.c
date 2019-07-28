@@ -20,7 +20,6 @@ initcode(void)
 	progp = prog;
 }
 
-
 void
 push(Datum d)
 {
@@ -393,15 +392,19 @@ void
 whilecode(void)
 {
 	Datum d;
-	Inst *savepc = pc;
-	execute(savepc+2);
+	Inst *savepc = pc;		/* loop body */
+	execute(savepc+2);		/* condition */
 	d = pop();
 	while (d.val) {
-		execute(*((Inst **)savepc));
+		execute(*((Inst **)savepc));	/* body */
+		if (inbreak) {
+			inbreak--;
+			break;
+		}
 		execute(savepc+2);
 		d = pop();
 	}
-	pc = *((Inst **)(savepc+1));
+	pc = *((Inst **)(savepc+1));	/* next statement */
 }
 
 void
@@ -410,11 +413,15 @@ dowhilecode(void)
 	Datum d;
 	Inst *savepc = pc;
 	do {
-		execute(*((Inst **)savepc));
-		execute(savepc+2);
+		execute(*((Inst **)savepc));	/* body */
+		if (inbreak) {
+			--inbreak;
+			break;
+		}
+		execute(savepc+2);		/* condition */
 		d = pop();
 	} while (d.val);
-	pc = *((Inst **)(savepc+1));
+	pc = *((Inst **)(savepc+1));		/* next statement */
 }
 
 void
@@ -422,32 +429,42 @@ forcode()
 {
 	Datum d;
 	Inst *savepc = pc;
-	execute(savepc+4);
+	execute(savepc+4);		/* precharge */
 	pop();
-	execute(*((Inst **)(savepc)));
+	execute(*((Inst **)(savepc)));	/* condition */
 	d = pop();
 	while (d.val) {
-		execute(*((Inst **)(savepc+2)));
-		execute(*((Inst **)(savepc+1)));
+		execute(*((Inst **)(savepc+2)));	/* body */
+		if (inbreak) {
+			--inbreak;
+			break;
+		}
+		execute(*((Inst **)(savepc+1)));	/* post loop */
 		pop();
-		execute(*((Inst **)(savepc)));
+		execute(*((Inst **)(savepc)));		/* condition */
 		d = pop();
 	}
-	pc = *((Inst **)(savepc+3));
+	pc = *((Inst **)(savepc+3));	/* next statement */
 }
 
 void
 ifcode()
 {
 	Datum d;
-	Inst *savepc = pc;
-	execute(savepc+3);
+	Inst *savepc = pc;	/* then part */
+	execute(savepc+3);	/* condition */
 	d = pop();
 	if (d.val)
 		execute(*((Inst **)(savepc)));
-	else if (*((Inst **)(savepc+1)))
+	else if (*((Inst **)(savepc+1)))	/* else part? */
 		execute(*((Inst **)(savepc+1)));
-	pc = *((Inst **)(savepc+2));
+	pc = *((Inst **)(savepc+2));		/* next statement */
+}
+
+void
+breakcode()
+{
+	inbreak++;
 }
 
 void
@@ -462,6 +479,8 @@ bltin(void)
 void
 execute(Inst *p)
 {
-	for (pc = p; *pc != STOP; )
+	for (pc = p; *pc != STOP; ) {
+		if (inbreak) return;
 		(*(*pc++))();
+	}
 }

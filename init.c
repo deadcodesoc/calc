@@ -47,6 +47,7 @@ static struct {		/* Keywords */
 	"if",		IF,
 	"else",		ELSE,
 	"for",		FOR,
+	"break",	BREAK,
 	0,		0,
 };
 
