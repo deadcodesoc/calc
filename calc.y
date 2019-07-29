@@ -22,7 +22,9 @@ unsigned int incontinue = 0;
 	Inst	*inst;
 }
 %type	<inst> expr stmt stmtlist asgn cond do while if end for break continue
+%type	<inst> loop
 %token	<sym> NUMBER PRINT VAR BLTIN UNDEF DO WHILE IF ELSE FOR BREAK CONTINUE
+%token	<sym> LOOP
 %right	'=' ADDEQ SUBEQ MULEQ DIVEQ MODEQ
 %left	OR
 %left	AND
@@ -54,6 +56,9 @@ stmt:     expr					{ code((Inst)pop); }
 	| PRINT expr				{ code(prexpr); $$ = $2; }
 	| break	{ if (!inloop) execerror("break illegal outside of loops", 0); }
 	| continue { if (!inloop) execerror("continue illegal outside of loops", 0); }
+	| loop {inloop++;} stmt {--inloop;} end {
+		($1)[1] = (Inst)$3;	/* body of loop */
+		($1)[2] = (Inst)$5; }	/* end */
 	| while '(' cond ')' {inloop++;} stmt {--inloop;} end {
 		($1)[1] = (Inst)$6;	/* body of loop */
 		($1)[2] = (Inst)$8; }	/* end, if cond fails */
@@ -76,6 +81,9 @@ stmt:     expr					{ code((Inst)pop); }
 	;
 
 cond:    expr					{ code(STOP); }
+	;
+
+loop:	 LOOP { $$ = code3(loopcode, STOP, STOP); }
 	;
 
 while:   WHILE	{ $$ = code3(whilecode, STOP, STOP); }

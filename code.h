@@ -51,6 +51,7 @@ extern void     forcode(void);
 extern void     ifcode(void);
 extern void     breakcode(void);
 extern void     continuecode(void);
+extern void     loopcode(void);
 extern void     bltin(void);
 extern Inst     *code(Inst);
 extern void     execute(Inst*);

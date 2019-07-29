@@ -389,6 +389,21 @@ prexpr(void)
 }
 
 void
+loopcode(void)
+{
+	Inst *savepc = pc;		/* loop body */
+	for (;;) {
+		execute(*((Inst **)savepc));	/* body */
+		if (inbreak) {
+			inbreak--;
+			break;
+		}
+		if (incontinue) incontinue--;
+	}
+	pc = *((Inst **)(savepc+1));	/* next statement */
+}
+
+void
 whilecode(void)
 {
 	Datum d;
