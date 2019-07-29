@@ -401,6 +401,7 @@ whilecode(void)
 			inbreak--;
 			break;
 		}
+		if (incontinue) incontinue--;
 		execute(savepc+2);
 		d = pop();
 	}
@@ -418,6 +419,7 @@ dowhilecode(void)
 			--inbreak;
 			break;
 		}
+		if (incontinue) incontinue--;
 		execute(savepc+2);		/* condition */
 		d = pop();
 	} while (d.val);
@@ -439,6 +441,7 @@ forcode()
 			--inbreak;
 			break;
 		}
+		if (incontinue) incontinue--;
 		execute(*((Inst **)(savepc+1)));	/* post loop */
 		pop();
 		execute(*((Inst **)(savepc)));		/* condition */
@@ -468,6 +471,12 @@ breakcode()
 }
 
 void
+continuecode()
+{
+	incontinue++;
+}
+
+void
 bltin(void)
 {
 	Datum d;
@@ -480,7 +489,7 @@ void
 execute(Inst *p)
 {
 	for (pc = p; *pc != STOP; ) {
-		if (inbreak) return;
+		if (inbreak || incontinue) return;
 		(*(*pc++))();
 	}
 }

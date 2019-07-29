@@ -9,6 +9,7 @@ typedef void (*Inst)(void);
 extern Inst prog[];
 extern Inst *progp;
 extern unsigned int inbreak;
+extern unsigned int incontinue;
 
 extern void     initcode(void);
 extern void     push(Datum);
@@ -49,6 +50,7 @@ extern void     dowhilecode(void);
 extern void     forcode(void);
 extern void     ifcode(void);
 extern void     breakcode(void);
+extern void     continuecode(void);
 extern void     bltin(void);
 extern Inst     *code(Inst);
 extern void     execute(Inst*);
