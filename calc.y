@@ -3,6 +3,7 @@
 #include <ctype.h>
 #include <math.h>
 #include <setjmp.h>
+#include <string.h>
 #include "calc.h"
 
 #define code2(c1,c2)	code(c1); code(c2)
@@ -148,17 +149,23 @@ expr:	NUMBER					{ $$ = code2(constpush, (Inst)$1); }
 
 char *progname = NULL;
 jmp_buf begin;
+char	*infile;	/* input file name */
+FILE	*fin;		/* input file pointer */
+char	**gargv;	/* global argument list */
+int	gargc;
+
+int c = '\n';		/* global for use by warning() */
 
 int
 yylex(void)
 {
 	int c;
-	while ((c = getchar()) == ' ' || c == '\t')	/* skip white spaces */
+	while ((c = getc(fin)) == ' ' || c == '\t')	/* skip white spaces */
 		;
 	if (c == EOF)					/* the $end */
 		return 0;
 	if (c == '#') {					/* comment */
-		while ((c = getchar()) != '\n' && c >= 0)
+		while ((c = getc(fin)) != '\n' && c >= 0)
 			;
 		if (c == '\n')
 			lineno++;
@@ -166,8 +173,8 @@ yylex(void)
 	}
 	if (c == '.' || isdigit(c)) {			/* a number */
 		double d;
-		ungetc(c, stdin);
-		scanf("%lf", &d);
+		ungetc(c, fin);
+		fscanf(fin, "%lf", &d);
 		yylval.sym = install("", NUMBER, d);
 		return NUMBER;
 	}
@@ -180,8 +187,8 @@ yylex(void)
 				execerror("name too long", sbuf);
 			}
 			*p++ = c;
-		} while((c=getchar()) != EOF && isalnum(c));
-		ungetc(c, stdin);
+		} while((c=getc(fin)) != EOF && isalnum(c));
+		ungetc(c, fin);
 		*p = '\0';
 		if ((s=lookup(sbuf)) == 0) {
 			s = install(sbuf, UNDEF, 0.0);
@@ -211,10 +218,10 @@ yylex(void)
 int
 follow(int expect, int ifyes, int ifno)
 {
-	int c = getchar();
+	int c = getc(fin);
 	if (c == expect)
 		return ifyes;
-	ungetc(c, stdin);
+	ungetc(c, fin);
 	return ifno;
 }
 
@@ -232,25 +239,66 @@ execerror(char *s, char *t)
 }
 
 void
-warning(char *s, char *t)
+warning(char *s, char *t)	/* print warning message */
 {
 	fprintf(stderr, "%s: %s ", progname, s);
 	if (t)
 		fprintf(stderr, " %s", t);
-	fprintf(stderr, " at line %d\n", lineno);
+	if (infile)
+		fprintf(stderr, " in %s", infile);
+	fprintf(stderr, " near line %d\n", lineno);
+	while (c != '\n' && c != EOF)
+		if ((c = getc(fin)) == '\n')	/* flush rest of input line */
+			lineno++;
+}
+
+int
+moreinput(void)
+{
+	if (gargc-- <= 0)
+		return 0;
+	if (fin && fin != stdin)
+		fclose(fin);
+	infile = *gargv++;
+	lineno = 1;
+	if (strcmp(infile, "-") == 0) {
+		fin = stdin;
+		infile = 0;
+	} else if ((fin=fopen(infile, "r")) == NULL) {
+		fprintf(stderr, "%s: can't open %s\n", progname, infile);
+		return moreinput();
+	}
+	return 1;
+}
+
+void
+run(void)	/* execute until EOF */
+{
+	setjmp(begin);
+	for (initcode(); yyparse(); initcode())
+		execute(prog);
 }
 
 int
 main(int argc, char *argv[])
 {
+	static int first = 1;
 #if YYDEBUG > 0
 	extern int yydebug;
 	yydebug=3;
 #endif
 	progname = argv[0];
 	init();
-	setjmp(begin);
-	for (initcode(); yyparse(); initcode())
-		execute(prog);
+	if (argc == 1) {	/* fake an argument list */
+		static char *stdinonly[] = { "-" };
+		gargv = stdinonly;
+		gargc = 1;
+	} else if (first) {	/* for interrupts */
+		first = 0;
+		gargv = argv+1;
+		gargc = argc-1;
+	}
+	while (moreinput())
+		run();
 	return 0;
 }
