@@ -93,7 +93,7 @@ mul(void)
 }
 
 void
-div(void)
+divop(void)
 {
 	Datum d1, d2;
 	d2 = pop();

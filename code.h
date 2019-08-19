@@ -19,7 +19,7 @@ extern void     varpush(void);
 extern void     add(void);
 extern void     sub(void);
 extern void     mul(void);
-extern void     div(void);
+extern void     divop(void);
 extern void     mod(void);
 extern void     negate(void);
 extern void     power(void);
