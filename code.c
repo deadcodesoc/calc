@@ -376,8 +376,12 @@ void
 printtop(void)	/* pop top value from stack, print it */
 {
 	Datum d;
+	static Symbol *s;       /* last value computed */
+	if (s == 0)
+		s = install("_", VAR, 0.0);
 	d = pop();
 	printf("\t%.*g\n", (int)lookup("PREC")->u.val, d.val);
+	s->u.val = d.val;
 }
 
 void

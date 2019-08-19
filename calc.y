@@ -182,7 +182,7 @@ yylex(void)
 		yylval.sym = install("", NUMBER, d);
 		return NUMBER;
 	}
-	if (isalpha(c)) {
+	if (isalpha(c) || c == '_') {
 		Symbol *s;
 		char  sbuf[100], *p = sbuf;
 		do {
@@ -191,7 +191,7 @@ yylex(void)
 				execerror("name too long", sbuf);
 			}
 			*p++ = c;
-		} while((c=getc(fin)) != EOF && isalnum(c));
+		} while((c=getc(fin)) != EOF && (isalnum(c) || c == '_'));
 		ungetc(c, fin);
 		*p = '\0';
 		if ((s=lookup(sbuf)) == 0) {
