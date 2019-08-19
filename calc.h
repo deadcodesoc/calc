@@ -1,6 +1,7 @@
 #include "symbol.h"
 #include "math.h"
 #include "code.h"
+#include "util.h"
 
 extern  void init(void);
 extern  int follow(int, int, int);

@@ -1,7 +1,7 @@
 #include <string.h>
 #include <stdlib.h>
-
 #include "symbol.h"
+#include "util.h"
 
 static Symbol *symlist = NULL;
 
@@ -18,13 +18,9 @@ Symbol *
 install(const char *s, int t, double d)
 {
 	Symbol *sp;
-	if ((sp = malloc(sizeof(Symbol))) == NULL)
-		return NULL;
-	sp->name = strdup(s);
-	if (sp->name == NULL) {
-		free(sp);
-		return NULL;
-	}
+	sp = emalloc(sizeof(Symbol));
+	sp->name = emalloc(strlen(s)+1); /* +1 for '\0' */
+	strcpy(sp->name, s);
 	sp->type = t;
 	sp->u.val = d;
 	sp->next = symlist;
