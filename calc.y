@@ -23,7 +23,7 @@ unsigned int incontinue = 0;
 	Inst	*inst;
 }
 %type	<inst> expr stmt stmtlist asgn cond do while if end for break continue
-%type	<inst> loop
+%type	<inst> loop prlist
 %token	<sym> NUMBER PRINT VAR BLTIN UNDEF DO WHILE IF ELSE FOR BREAK CONTINUE
 %token	<sym> LOOP
 %right	'=' ADDEQ SUBEQ MULEQ DIVEQ MODEQ
@@ -54,7 +54,7 @@ asgn:	  VAR '=' expr				{ $$ = $3; code3(varpush, (Inst)$1, assign); }
 	;
 
 stmt:     expr					{ code((Inst)pop); }
-	| PRINT expr				{ code(prexpr); $$ = $2; }
+	| PRINT prlist				{ $$ = $2; }
 	| break	{ if (!inloop) execerror("break illegal outside of loops", 0); }
 	| continue { if (!inloop) execerror("continue illegal outside of loops", 0); }
 	| loop {inloop++;} stmt {--inloop;} end {
@@ -143,6 +143,10 @@ expr:	NUMBER					{ $$ = code2(constpush, (Inst)$1); }
 	| DEC VAR				{ $$ = code2(predec, (Inst)$2); }
 	| VAR INC				{ $$ = code2(postinc, (Inst)$1); }
 	| VAR DEC				{ $$ = code2(postdec, (Inst)$1); }
+	;
+
+prlist:	  expr					{ code(prexpr); }
+	| prlist ',' expr			{ code(prexpr); }
 	;
 
 %%

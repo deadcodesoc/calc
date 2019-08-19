@@ -381,11 +381,11 @@ print(void)
 }
 
 void
-prexpr(void)
+prexpr(void)	/* print numeric value */
 {
 	Datum d;
 	d = pop();
-	printf("%.17g\n", d.val);
+	printf("%.17g ", d.val);
 }
 
 void
