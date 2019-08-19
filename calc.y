@@ -41,7 +41,7 @@ list:	/* empty */
 	| list sep
 	| list asgn sep		{ code2((Inst)pop, STOP); return 1; }
 	| list stmt sep		{ code(STOP); return 1; }
-	| list expr sep		{ code2(print, STOP); return 1; }
+	| list expr sep		{ code2(printtop, STOP); return 1; }
 	| list error sep	{ yyerrok; }
 	;
 

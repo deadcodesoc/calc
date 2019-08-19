@@ -11,6 +11,7 @@ static struct {		/* Constants */
 	"GAMMA", 0.57721566490153286060,  /* Euler */
 	"DEG",	57.29577951308232087680,  /* deg/radian */
 	"PHI",   1.61803398874989484820,  /* golden ratio */
+	"PREC",  17,	/* output precision */
 	0,	 0
 };
 

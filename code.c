@@ -373,11 +373,11 @@ assign(void)
 }
 
 void
-print(void)
+printtop(void)	/* pop top value from stack, print it */
 {
 	Datum d;
 	d = pop();
-	printf("\t%.17g\n", d.val);
+	printf("\t%.*g\n", (int)lookup("PREC")->u.val, d.val);
 }
 
 void
@@ -385,7 +385,7 @@ prexpr(void)	/* print numeric value */
 {
 	Datum d;
 	d = pop();
-	printf("%.17g ", d.val);
+	printf("%.*g ", (int)lookup("PREC")->u.val, d.val);
 }
 
 void
