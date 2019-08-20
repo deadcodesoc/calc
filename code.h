@@ -45,6 +45,7 @@ extern void     eval(void);
 extern void     assign(void);
 extern void     printtop(void);
 extern void     prexpr(void);
+extern void     prstr(void);
 extern void     whilecode(void);
 extern void     dowhilecode(void);
 extern void     forcode(void);

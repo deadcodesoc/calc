@@ -24,7 +24,7 @@ unsigned int incontinue = 0;
 }
 %type	<inst> expr stmt stmtlist asgn cond do while if end for break continue
 %type	<inst> loop prlist
-%token	<sym> NUMBER PRINT VAR BLTIN UNDEF DO WHILE IF ELSE FOR BREAK CONTINUE
+%token	<sym> NUMBER STRING PRINT VAR BLTIN UNDEF DO WHILE IF ELSE FOR BREAK CONTINUE
 %token	<sym> LOOP
 %right	'=' ADDEQ SUBEQ MULEQ DIVEQ MODEQ
 %left	OR
@@ -146,7 +146,9 @@ expr:	NUMBER					{ $$ = code2(constpush, (Inst)$1); }
 	;
 
 prlist:	  expr					{ code(prexpr); }
+	| STRING				{ $$ = code2(prstr, (Inst)$1); }
 	| prlist ',' expr			{ code(prexpr); }
+	| prlist ',' STRING			{ code2(prstr, (Inst)$3); }
 	;
 
 %%
@@ -202,6 +204,22 @@ yylex(void)
 		yylval.sym = s;
 		return s->type == UNDEF ? VAR : s->type;
 	}
+	if (c == '"') {	/* quoted string */
+		char sbuf[100], *p;
+		for (p = sbuf; (c=getc(fin)) != '"'; p++) {
+			if (c == '\n' || c == EOF)
+				execerror("missing quote", "");
+			if (p >= sbuf + sizeof(sbuf) - 1) {
+				*p = '\0';
+				execerror("string too long", sbuf);
+			}
+			*p = backslash(c);
+		}
+		*p = 0;
+		yylval.sym = (Symbol *)emalloc(strlen(sbuf)+1);
+		strcpy((char*)yylval.sym, sbuf);
+		return STRING;
+	}
 	switch (c) {
 	case '+':	return follow('+', INC, follow('=', ADDEQ, '+'));
 	case '-':	return follow('-', DEC, follow('=', SUBEQ, '-'));
@@ -217,6 +235,18 @@ yylex(void)
 	case '\n':	lineno++; return '\n';
 	default:	return c;
 	}
+}
+
+int
+backslash(int c)	/* get next char with \'s interpreted */
+{
+	static char transtab[] = "b\bf\fn\nr\rt\t";
+	if (c != '\\')
+		return c;
+	c = getc(fin);
+	if (islower(c) && strchr(transtab, c))
+		return strchr(transtab, c)[1];
+	return c;
 }
 
 int

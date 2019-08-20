@@ -393,6 +393,12 @@ prexpr(void)	/* print numeric value */
 }
 
 void
+prstr(void)	/* print string value */
+{
+	printf("%s", (char *) *pc++);
+}
+
+void
 loopcode(void)
 {
 	Inst *savepc = pc;		/* loop body */

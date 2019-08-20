@@ -4,8 +4,9 @@ struct symbol {
     char    *name;
     short   type;
     union {
-        double  val;
-        double  (*ptr)();
+        double  val;            /* VAR */
+        double  (*ptr)(double); /* BLTIN */
+        char    *str;           /* STRING */
     } u;
     Symbol  *next;
 };
