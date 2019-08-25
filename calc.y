@@ -165,11 +165,17 @@ int c = '\n';		/* global for use by warning() */
 int
 yylex(void)
 {
-	int c;
 	while ((c = getc(fin)) == ' ' || c == '\t')	/* skip white spaces */
 		;
 	if (c == EOF)					/* the $end */
 		return 0;
+	if (c == '\\') {
+		c = getc(fin);
+		if (c == '\n') {
+			lineno++;
+			return yylex();
+		}
+	}
 	if (c == '#') {					/* comment */
 		while ((c = getc(fin)) != '\n' && c >= 0)
 			;
