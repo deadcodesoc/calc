@@ -33,7 +33,7 @@ unsigned int incontinue = 0;
 %left	'+' '-'
 %left	'*' '/' '%'
 %left	UNARYMINUS NOT INC DEC
-%right	'^'
+%right	POWER
 
 %%
 
@@ -125,7 +125,7 @@ expr:	NUMBER					{ $$ = code2(constpush, (Inst)$1); }
 	| expr '*' expr				{ code(mul); }
 	| expr '/' expr				{ code(divop); }	/* ansi has a div fcn! */
 	| expr '%' expr				{ code(mod); }
-	| expr '^' expr				{ code(power); }
+	| expr POWER expr			{ code(power); }
 	| '(' expr ')'				{ $$ = $2; }
 	| '[' expr ']'				{ $$ = $2; }
 	| '{' expr '}'				{ $$ = $2; }
@@ -223,7 +223,8 @@ yylex(void)
 	switch (c) {
 	case '+':	return follow('+', INC, follow('=', ADDEQ, '+'));
 	case '-':	return follow('-', DEC, follow('=', SUBEQ, '-'));
-	case '*':	return follow('=', MULEQ, '*');
+	case '*':	return follow('=', MULEQ, follow('*', POWER, '*'));
+	case '^':	return POWER;
 	case '/':	return follow('=', DIVEQ, '/');
 	case '%':	return follow('=', MODEQ, '%');
 	case '>':	return follow('=', GE, GT);
