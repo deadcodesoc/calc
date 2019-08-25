@@ -1,13 +1,25 @@
+#ifndef CODE_H
+#define CODE_H
+#include "symbol.h"
+
+typedef void (*Inst)(void);
+#define STOP    (Inst) 0
+
 typedef union Datum {
     double  val;
     Symbol  *sym;
 } Datum;
 
-typedef void (*Inst)(void);
-#define STOP    (Inst) 0
+typedef struct Frame {	/* proc/func call stack frame */
+	Symbol	*sp;	/* symbol table entry */
+	Inst	*retpc;	/* where to resume after return */
+	Datum	*argn;	/* n-th argument on stack */
+	int	nargs;	/* number of arguments */
+} Frame;
+
 
 extern Inst prog[];
-extern Inst *progp;
+extern Inst *progp, *progbase;
 extern unsigned int inbreak;
 extern unsigned int incontinue;
 
@@ -53,6 +65,14 @@ extern void     ifcode(void);
 extern void     breakcode(void);
 extern void     continuecode(void);
 extern void     loopcode(void);
+extern void     call(void);
+extern void     arg(void);
+extern void     argassign(void);
+extern void	procret(void);
+extern void argaddeq(void), argsubeq(void), argmuleq(void);
+extern void argdiveq(void), argmodeq(void);
 extern void     bltin(void);
 extern Inst     *code(Inst);
 extern void     execute(Inst*);
+
+#endif /* CODE_H */

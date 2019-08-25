@@ -16,16 +16,21 @@ unsigned int lineno = 1;
 unsigned int inloop = 0;
 unsigned int inbreak = 0;
 unsigned int incontinue = 0;
+unsigned int indef = 0;
 %}
 
 %union {
-	Symbol	*sym;
-	Inst	*inst;
+	Symbol	*sym;	/* symbol table pointer */
+	Inst	*inst;	/* machine instruction */
+	long	narg;	/* number of arguments */
 }
 %type	<inst> expr stmt stmtlist asgn cond do while if end for break continue
-%type	<inst> loop prlist
+%type	<inst> loop prlist begin
+%type	<sym>  procname
+%type	<narg> arglist
 %token	<sym> NUMBER STRING PRINT VAR BLTIN UNDEF DO WHILE IF ELSE FOR BREAK CONTINUE
-%token	<sym> LOOP
+%token	<sym> LOOP PROCEDURE RETURN PROC
+%token	<narg> ARG
 %right	'=' ADDEQ SUBEQ MULEQ DIVEQ MODEQ
 %left	OR
 %left	AND
@@ -39,6 +44,7 @@ unsigned int incontinue = 0;
 
 list:	/* empty */
 	| list sep
+	| list defn sep
 	| list asgn sep		{ code2((Inst)pop, STOP); return 1; }
 	| list stmt sep		{ code(STOP); return 1; }
 	| list expr sep		{ code2(printtop, STOP); return 1; }
@@ -51,9 +57,18 @@ asgn:	  VAR '=' expr				{ $$ = $3; code3(varpush, (Inst)$1, assign); }
 	| VAR MULEQ expr			{ $$ = $3; code3(varpush, (Inst)$1, muleq); }
 	| VAR DIVEQ expr			{ $$ = $3; code3(varpush, (Inst)$1, diveq); }
 	| VAR MODEQ expr			{ $$ = $3; code3(varpush, (Inst)$1, modeq); }
+	| ARG '=' expr   { defnonly("$"); code2(argassign,(Inst)$1); $$=$3;}
+	| ARG ADDEQ expr { defnonly("$"); code2(argaddeq,(Inst)$1); $$=$3;}
+	| ARG SUBEQ expr { defnonly("$"); code2(argsubeq,(Inst)$1); $$=$3;}
+	| ARG MULEQ expr { defnonly("$"); code2(argmuleq,(Inst)$1); $$=$3;}
+	| ARG DIVEQ expr { defnonly("$"); code2(argdiveq,(Inst)$1); $$=$3;}
+	| ARG MODEQ expr { defnonly("$"); code2(argmodeq,(Inst)$1); $$=$3;}
 	;
 
 stmt:     expr					{ code((Inst)pop); }
+	| RETURN { defnonly("return"); code(procret); }
+	| PROCEDURE begin '(' arglist ')'
+		{ $$ = $2; code3(call, (Inst)$1, (Inst)$4); }
 	| PRINT prlist				{ $$ = $2; }
 	| break	{ if (!inloop) execerror("break illegal outside of loops", 0); }
 	| continue { if (!inloop) execerror("continue illegal outside of loops", 0); }
@@ -105,6 +120,9 @@ break:	BREAK { $$ = code(breakcode); }
 continue: CONTINUE { $$ = code(continuecode); }
 	;
 
+begin:	  /* nothing */				{ $$ = progp; }
+	;
+
 end:						{ code(STOP); $$ = progp; }
 	;
 
@@ -118,6 +136,7 @@ sep:      '\n' | ';'
 
 expr:	NUMBER					{ $$ = code2(constpush, (Inst)$1); }
 	| VAR					{ $$ = code3(varpush, (Inst)$1, eval); }
+	| ARG    				{ defnonly("$"); $$ = code2(arg, (Inst)$1); }
 	| asgn
 	| BLTIN '(' expr ')'			{ $$ = $3; code2(bltin, (Inst)$1->u.ptr); }
 	| expr '+' expr				{ code(add); }
@@ -149,6 +168,19 @@ prlist:	  expr					{ code(prexpr); }
 	| STRING				{ $$ = code2(prstr, (Inst)$1); }
 	| prlist ',' expr			{ code(prexpr); }
 	| prlist ',' STRING			{ code2(prstr, (Inst)$3); }
+	;
+
+defn:	  PROC procname { $2->type=PROCEDURE; indef=1; }
+	    '(' ')' stmt { code(procret); define($2); indef=0; }
+	;
+
+procname: VAR
+	| PROCEDURE
+	;
+
+arglist:  /* nothing */		{ $$ = 0; }
+	| expr			{ $$ = 1; }
+	| arglist ',' expr	{ $$ = $1 + 1; }
 	;
 
 %%
@@ -209,6 +241,16 @@ yylex(void)
 		}
 		yylval.sym = s;
 		return s->type == UNDEF ? VAR : s->type;
+	}
+	if (c == '$') { /* argument? */
+		int n = 0;
+		while (isdigit(c=getc(fin)))
+			n = 10 * n + c - '0';
+		ungetc(c, fin);
+		if (n == 0)
+			execerror("strange $...", (char *)0);
+		yylval.narg = n;
+		return ARG;
 	}
 	if (c == '"') {	/* quoted string */
 		char sbuf[100], *p;
@@ -293,6 +335,13 @@ warning(char *s, char *t)	/* print warning message */
 			lineno++;
 }
 
+void
+defnonly(char *s)	/* warn if illegal definition */
+{
+	if (!indef)
+		execerror(s, "used outside definition");
+}
+
 int
 moreinput(void)
 {
@@ -317,7 +366,7 @@ run(void)	/* execute until EOF */
 {
 	setjmp(begin);
 	for (initcode(); yyparse(); initcode())
-		execute(prog);
+		execute(progbase);
 }
 
 int

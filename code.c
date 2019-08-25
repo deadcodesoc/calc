@@ -12,12 +12,22 @@ static Datum	*stackp;
 Inst	prog[NPROG];
 Inst	*progp;
 Inst	*pc;
+Inst	*progbase = prog; /* start of current subprogram */
+int	returning;	/* 1 if return stmt seen */
+extern int	indef;	/* 1 if parsing a func or proc */
+
+#define	NFRAME	100
+Frame	frame[NFRAME];
+Frame	*fp;		/* frame pointer */
 
 void
 initcode(void)
 {
+	progp = progbase;
 	stackp = stack;
-	progp = prog;
+	fp = frame;
+	returning = 0;
+	indef = 0;
 }
 
 void
@@ -502,12 +512,121 @@ continuecode()
 }
 
 void
+call(void) 		/* call a function */
+{
+	Symbol *sp = (Symbol *)pc[0]; /* symbol table entry */
+				      /* for function */
+	if (fp++ >= &frame[NFRAME-1])
+		execerror(sp->name, "call nested too deeply");
+	fp->sp = sp;
+	fp->nargs = (int)pc[1];
+	fp->retpc = pc + 2;
+	fp->argn = stackp - 1;	/* last argument */
+	execute(sp->u.defn);
+	returning = 0;
+}
+
+void
+procret(void) 	/* return from a procedure */
+{
+	int i;
+	for (i = 0; i < fp->nargs; i++)
+		pop();	/* pop arguments */
+	pc = (Inst *)fp->retpc;
+	--fp;
+	returning = 1;
+}
+
+double*
+getarg(void) 	/* return pointer to argument */
+{
+	int nargs = (int) *pc++;
+	if (nargs > fp->nargs)
+	    execerror(fp->sp->name, "not enough arguments");
+	return &fp->argn[nargs - fp->nargs].val;
+}
+
+void
+arg(void) 	/* push argument onto stack */
+{
+	Datum d;
+	d.val = *getarg();
+	push(d);
+}
+
+void
+argassign(void) 	/* store top of stack in argument */
+{
+	Datum d;
+	d = pop();
+	push(d);	/* leave value on stack */
+	*getarg() = d.val;
+}
+
+void
+argaddeq(void) 	/* store top of stack in argument */
+{
+	Datum d;
+	d = pop();
+	d.val = *getarg() += d.val;
+	push(d);	/* leave value on stack */
+}
+
+void
+argsubeq(void) 	/* store top of stack in argument */
+{
+	Datum d;
+	d = pop();
+	d.val = *getarg() -= d.val;
+	push(d);	/* leave value on stack */
+}
+
+void
+argmuleq(void) 	/* store top of stack in argument */
+{
+	Datum d;
+	d = pop();
+	d.val = *getarg() *= d.val;
+	push(d);	/* leave value on stack */
+}
+
+void
+argdiveq(void) 	/* store top of stack in argument */
+{
+	Datum d;
+	d = pop();
+	d.val = *getarg() /= d.val;
+	push(d);	/* leave value on stack */
+}
+
+void
+argmodeq(void) 	/* store top of stack in argument */
+{
+	Datum d;
+	double *x;
+	long y;
+	d = pop();
+	/* d.val = *getarg() %= d.val; */
+	x = getarg();
+	y = *x;
+	d.val = *x = y % (long) d.val;
+	push(d);	/* leave value on stack */
+}
+
+void
 bltin(void)
 {
 	Datum d;
 	d = pop();
 	d.val = (*(double (*)())(*pc++))(d.val);
 	push(d);
+}
+
+void
+define(Symbol *sp)	/* put func/proc in symbol table */
+{
+	sp->u.defn = progbase;	/* start of code */
+	progbase = progp;	/* next code starts here */
 }
 
 void
