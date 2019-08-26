@@ -29,7 +29,7 @@ unsigned int indef = 0;
 %type	<sym>  procname
 %type	<narg> arglist
 %token	<sym> NUMBER STRING PRINT VAR BLTIN UNDEF DO WHILE IF ELSE FOR BREAK CONTINUE
-%token	<sym> LOOP PROCEDURE RETURN PROC READ
+%token	<sym> LOOP FUNCTION PROCEDURE RETURN FUNC PROC READ
 %token	<narg> ARG
 %right	'=' ADDEQ SUBEQ MULEQ DIVEQ MODEQ
 %left	OR
@@ -138,6 +138,8 @@ expr:	NUMBER					{ $$ = code2(constpush, (Inst)$1); }
 	| VAR					{ $$ = code3(varpush, (Inst)$1, eval); }
 	| ARG    				{ defnonly("$"); $$ = code2(arg, (Inst)$1); }
 	| asgn
+	| FUNCTION begin '(' arglist ')'
+		{ $$ = $2; code3(call,(Inst)$1,(Inst)$4); }
 	| READ '(' VAR ')'			{ $$ = code2(varread, (Inst)$3); }
 	| BLTIN '(' expr ')'			{ $$ = $3; code2(bltin, (Inst)$1->u.ptr); }
 	| expr '+' expr				{ code(add); }
@@ -171,11 +173,13 @@ prlist:	  expr					{ code(prexpr); }
 	| prlist ',' STRING			{ code2(prstr, (Inst)$3); }
 	;
 
-defn:	  PROC procname { $2->type=PROCEDURE; indef=1; }
+defn:	  FUNC procname { $2->type=FUNCTION; indef=1; }
+	    '(' ')' stmt { code(procret); define($2); indef=0; }
+	| PROC procname { $2->type=PROCEDURE; indef=1; }
 	    '(' ')' stmt { code(procret); define($2); indef=0; }
 	;
-
 procname: VAR
+	| FUNCTION
 	| PROCEDURE
 	;
 

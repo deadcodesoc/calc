@@ -550,8 +550,8 @@ call(void) 		/* call a function */
 	returning = 0;
 }
 
-void
-procret(void) 	/* return from a procedure */
+static void
+ret(void) 		/* common return from func or proc */
 {
 	int i;
 	for (i = 0; i < fp->nargs; i++)
@@ -559,6 +559,26 @@ procret(void) 	/* return from a procedure */
 	pc = (Inst *)fp->retpc;
 	--fp;
 	returning = 1;
+}
+
+void
+funcret(void) 	/* return from a function */
+{
+	Datum d;
+	if (fp->sp->type == PROCEDURE)
+		execerror(fp->sp->name, "(proc) returns value");
+	d = pop();	/* preserve function return value */
+	ret();
+	push(d);
+}
+
+void
+procret(void) 	/* return from a procedure */
+{
+	if (fp->sp->type == FUNCTION)
+		execerror(fp->sp->name,
+			"(func) returns no value");
+	ret();
 }
 
 double*

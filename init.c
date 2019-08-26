@@ -43,6 +43,7 @@ static struct {		/* Keywords */
 	int	kval;
 } keywords[] = {
 	"proc",		PROC,
+	"func",		FUNC,
 	"return",	RETURN,
 	"print",	PRINT,
 	"while",	WHILE,
