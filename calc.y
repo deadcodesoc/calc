@@ -29,7 +29,7 @@ unsigned int indef = 0;
 %type	<sym>  procname
 %type	<narg> arglist
 %token	<sym> NUMBER STRING PRINT VAR BLTIN UNDEF DO WHILE IF ELSE FOR BREAK CONTINUE
-%token	<sym> LOOP PROCEDURE RETURN PROC
+%token	<sym> LOOP PROCEDURE RETURN PROC READ
 %token	<narg> ARG
 %right	'=' ADDEQ SUBEQ MULEQ DIVEQ MODEQ
 %left	OR
@@ -138,6 +138,7 @@ expr:	NUMBER					{ $$ = code2(constpush, (Inst)$1); }
 	| VAR					{ $$ = code3(varpush, (Inst)$1, eval); }
 	| ARG    				{ defnonly("$"); $$ = code2(arg, (Inst)$1); }
 	| asgn
+	| READ '(' VAR ')'			{ $$ = code2(varread, (Inst)$3); }
 	| BLTIN '(' expr ')'			{ $$ = $3; code2(bltin, (Inst)$1->u.ptr); }
 	| expr '+' expr				{ code(add); }
 	| expr '-' expr				{ code(sub); }

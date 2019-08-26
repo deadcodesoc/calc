@@ -53,6 +53,7 @@ static struct {		/* Keywords */
 	"break",	BREAK,
 	"continue",	CONTINUE,
 	"loop",		LOOP,
+	"read",		READ,
 	0,		0,
 };
 

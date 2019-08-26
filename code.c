@@ -409,6 +409,30 @@ prstr(void)	/* print string value */
 }
 
 void
+varread(void)	/* read into variable */
+{
+	Datum d;
+	extern FILE *fin;
+	Symbol *var = (Symbol *) *pc++;
+  Again:
+	switch (fscanf(fin, "%lf", &var->u.val)) {
+	case EOF:
+		if (moreinput())
+			goto Again;
+		d.val = var->u.val = 0.0;
+		break;
+	case 0:
+		execerror("non-number read into", var->name);
+		break;
+	default:
+		d.val = 1.0;
+		break;
+	}
+	var->type = VAR;
+	push(d);
+}
+
+void
 loopcode(void)
 {
 	Inst *savepc = pc;		/* loop body */
