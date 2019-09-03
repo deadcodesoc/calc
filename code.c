@@ -442,7 +442,8 @@ loopcode(void)
 			inbreak--;
 			break;
 		}
-		if (incontinue) incontinue--;
+		if (incontinue)
+			incontinue--;
 	}
 	pc = *((Inst **)(savepc+1));	/* next statement */
 }
@@ -456,15 +457,19 @@ whilecode(void)
 	d = pop();
 	while (d.val) {
 		execute(*((Inst **)savepc));	/* body */
+		if (returning)
+			break;
 		if (inbreak) {
 			inbreak--;
 			break;
 		}
-		if (incontinue) incontinue--;
+		if (incontinue)
+			incontinue--;
 		execute(savepc+2);
 		d = pop();
 	}
-	pc = *((Inst **)(savepc+1));	/* next statement */
+	if (!returning)
+		pc = *((Inst **)(savepc+1));	/* next statement */
 }
 
 void
@@ -474,15 +479,19 @@ dowhilecode(void)
 	Inst *savepc = pc;
 	do {
 		execute(*((Inst **)savepc));	/* body */
+		if (returning)
+			break;
 		if (inbreak) {
 			--inbreak;
 			break;
 		}
-		if (incontinue) incontinue--;
+		if (incontinue)
+			incontinue--;
 		execute(savepc+2);		/* condition */
 		d = pop();
 	} while (d.val);
-	pc = *((Inst **)(savepc+1));		/* next statement */
+	if (!returning)
+		pc = *((Inst **)(savepc+1));		/* next statement */
 }
 
 void
@@ -496,17 +505,21 @@ forcode()
 	d = pop();
 	while (d.val) {
 		execute(*((Inst **)(savepc+2)));	/* body */
+		if (returning)
+			break;
 		if (inbreak) {
 			--inbreak;
 			break;
 		}
-		if (incontinue) incontinue--;
+		if (incontinue)
+			incontinue--;
 		execute(*((Inst **)(savepc+1)));	/* post loop */
 		pop();
 		execute(*((Inst **)(savepc)));		/* condition */
 		d = pop();
 	}
-	pc = *((Inst **)(savepc+3));	/* next statement */
+	if (!returning)
+		pc = *((Inst **)(savepc+3));	/* next statement */
 }
 
 void
@@ -520,7 +533,8 @@ ifcode()
 		execute(*((Inst **)(savepc)));
 	else if (*((Inst **)(savepc+1)))	/* else part? */
 		execute(*((Inst **)(savepc+1)));
-	pc = *((Inst **)(savepc+2));		/* next statement */
+	if (!returning)
+		pc = *((Inst **)(savepc+2));		/* next statement */
 }
 
 void
@@ -676,8 +690,9 @@ define(Symbol *sp)	/* put func/proc in symbol table */
 void
 execute(Inst *p)
 {
-	for (pc = p; *pc != STOP; ) {
-		if (inbreak || incontinue) return;
-		(*(*pc++))();
+	for (pc = p; *pc != STOP && !returning; ) {
+		if (inbreak || incontinue)
+			return;
+		(*((++pc)[-1]))();
 	}
 }
